@@ -1,0 +1,713 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>WeekWise</title>
+<style>
+html,body{margin:0}
+/* Layout: one calm column for a phone. Week list on top, day timeline below it, a raised Add button in a bottom bar, forms open as slide-up sheets. */
+:root{
+  --font:'Plus Jakarta Sans',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --bg:#F3F5F8; --surface:#FFFFFF; --ink:#14202B; --muted:#5B6773; --line:#E3E8EE;
+  --accent:#0B5D66; --accent-ink:#FFFFFF; --accent-soft:#E3F1F2; --danger:#B3261E;
+  --work-bg:#E6EDFC; --work-ink:#1E3F9E; --work-dot:#2F5FD0;
+  --school-bg:#EEE8FC; --school-ink:#4B2BA8; --school-dot:#7048D8;
+  --call-bg:#E1F4EA; --call-ink:#0E6A40; --call-dot:#178A57;
+  --personal-bg:#FCEFD6; --personal-ink:#7A4800; --personal-dot:#C77700;
+  --family-bg:#FBE6EF; --family-ink:#8E2557; --family-dot:#C23F7B;
+  --slate-bg:#E8ECF0; --slate-ink:#3A4651; --slate-dot:#5B6773;
+  --scrim:rgba(10,18,24,.5);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F161C; --surface:#18222B; --ink:#E8EEF3; --muted:#9AA8B5; --line:#26323D;
+    --accent:#4FB3BF; --accent-ink:#06262B; --accent-soft:#143036; --danger:#F2B8B5;
+    --work-bg:#1B2A4A; --work-ink:#A9C0F5; --work-dot:#6F94EE;
+    --school-bg:#2A2147; --school-ink:#CDBDF7; --school-dot:#A084F0;
+    --call-bg:#12301F; --call-ink:#8FDDB2; --call-dot:#3FBF80;
+    --personal-bg:#3A2A0C; --personal-ink:#F0C877; --personal-dot:#E3A02E;
+    --family-bg:#3A1727; --family-ink:#F2A9C7; --family-dot:#E06A9C;
+    --slate-bg:#222C35; --slate-ink:#C0CBD5; --slate-dot:#8D9AA6;
+    --scrim:rgba(0,0,0,.6);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F161C; --surface:#18222B; --ink:#E8EEF3; --muted:#9AA8B5; --line:#26323D;
+  --accent:#4FB3BF; --accent-ink:#06262B; --accent-soft:#143036; --danger:#F2B8B5;
+  --work-bg:#1B2A4A; --work-ink:#A9C0F5; --work-dot:#6F94EE;
+  --school-bg:#2A2147; --school-ink:#CDBDF7; --school-dot:#A084F0;
+  --call-bg:#12301F; --call-ink:#8FDDB2; --call-dot:#3FBF80;
+  --personal-bg:#3A2A0C; --personal-ink:#F0C877; --personal-dot:#E3A02E;
+  --family-bg:#3A1727; --family-ink:#F2A9C7; --family-dot:#E06A9C;
+  --slate-bg:#222C35; --slate-ink:#C0CBD5; --slate-dot:#8D9AA6;
+  --scrim:rgba(0,0,0,.6);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.4;-webkit-text-size-adjust:100%}
+button{font-family:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.wrap{max-width:560px;margin:0 auto;padding-block:20px 120px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.hd{display:flex;justify-content:space-between;align-items:flex-end;gap:12px}
+.hd>div{min-width:0}
+.eyebrow{font-size:13px;font-weight:600;color:var(--muted)}
+h1{margin:2px 0 0;font-size:28px;font-weight:800;letter-spacing:-.5px;text-wrap:balance}
+.sub{font-size:13px;color:var(--muted);margin-top:2px}
+.hbtns{display:flex;gap:8px;flex:none}
+.ib{width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);display:inline-flex;align-items:center;justify-content:center;padding:0;cursor:pointer}
+.sec{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.6px;text-transform:uppercase;margin:20px 0 8px}
+.banner{display:flex;align-items:center;gap:10px;width:100%;margin-top:14px;background:var(--accent);color:var(--accent-ink);border:0;border-radius:14px;padding:12px 14px;text-align:left;cursor:pointer;font-size:14px}
+.banner b{display:block;font-weight:700}
+.banner small{display:block;font-size:12px;opacity:.9;margin-top:1px}
+.banner.ok{background:var(--accent-soft);color:var(--accent)}
+.banner svg{flex:none}
+.list{display:flex;flex-direction:column;gap:8px}
+.day{display:flex;gap:12px;align-items:center;width:100%;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 12px;text-align:left;cursor:pointer;font-size:14px}
+.day.today{border:2px solid var(--accent);padding:9px 11px}
+.dbk{width:44px;text-align:center;flex:none}
+.dbk small{display:block;font-size:11px;font-weight:600;color:var(--muted)}
+.dbk b{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums}
+.day.today .dbk{background:var(--accent);color:var(--accent-ink);border-radius:10px;padding:4px 0}
+.day.today .dbk small{color:inherit}
+.chips{flex:1;min-width:0;display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:999px;font-size:11px;font-weight:600;max-width:100%}
+.chip i{width:6px;height:6px;border-radius:3px;flex:none}
+.chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip.done span{text-decoration:line-through;opacity:.7}
+.c-work{background:var(--work-bg);color:var(--work-ink)}.c-work i{background:var(--work-dot)}
+.c-school{background:var(--school-bg);color:var(--school-ink)}.c-school i{background:var(--school-dot)}
+.c-call{background:var(--call-bg);color:var(--call-ink)}.c-call i{background:var(--call-dot)}
+.c-personal{background:var(--personal-bg);color:var(--personal-ink)}.c-personal i{background:var(--personal-dot)}
+.c-family{background:var(--family-bg);color:var(--family-ink)}.c-family i{background:var(--family-dot)}
+.c-slate{background:var(--slate-bg);color:var(--slate-ink)}.c-slate i{background:var(--slate-dot)}
+.prog{font-size:12px;font-weight:700;color:var(--muted);flex:none;font-variant-numeric:tabular-nums}
+.empty{color:var(--muted);font-size:12px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px}
+.top3 label,.top3 .t3{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600;padding:4px 0;min-height:36px}
+.tl{display:flex;flex-direction:column;gap:8px}
+.tr{display:flex;gap:10px;align-items:flex-start}
+.tm{width:46px;flex:none;font-size:12px;font-weight:700;color:var(--muted);padding-top:12px;font-variant-numeric:tabular-nums}
+.row{flex:1;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 8px 8px 12px;display:flex;align-items:center;gap:10px}
+.row.bar-school{border-left:4px solid var(--school-dot)}
+.row.bar-call{border-left:4px solid var(--call-dot)}
+.row.bar-work{border-left:4px solid var(--work-dot)}
+.row.bar-personal{border-left:4px solid var(--personal-dot)}
+.row.bar-family{border-left:4px solid var(--family-dot)}
+.row.quiet{color:var(--muted);font-size:13px;font-weight:600;padding:8px 12px}
+.rb{flex:1;min-width:0}
+.rt{font-size:14px;font-weight:700;overflow-wrap:anywhere}
+.rs{font-size:12px;color:var(--muted);margin-top:2px;overflow-wrap:anywhere}
+.done .rt{text-decoration:line-through;color:var(--muted)}
+.ex{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:6px;background:var(--slate-bg);color:var(--slate-ink);font-size:10px;font-weight:700;vertical-align:middle}
+.chk{width:44px;height:44px;flex:none;background:transparent;border:0;padding:0;display:flex;align-items:center;justify-content:center;cursor:pointer;margin-left:-8px}
+.chk span{width:22px;height:22px;border-radius:7px;border:2px solid var(--muted);display:flex;align-items:center;justify-content:center;color:var(--accent-ink)}
+.chk[aria-pressed="true"] span{background:var(--accent);border-color:var(--accent)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 14px;border-radius:12px;border:1px solid transparent;font-size:13px;font-weight:700;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn.pri{background:var(--accent);color:var(--accent-ink)}
+.btn.out{background:var(--surface);color:var(--accent);border-color:var(--accent)}
+.btn.gh{background:transparent;color:var(--muted);border-color:var(--line)}
+.btn.call{background:var(--call-ink);color:var(--surface)}
+.btn.sch{background:var(--school-ink);color:var(--surface)}
+.btn.danger{background:transparent;color:var(--danger);border-color:var(--danger)}
+.btn.full{width:100%;min-height:52px;font-size:15px;border-radius:14px}
+.lnk{display:inline-flex;align-items:center;gap:4px;min-height:32px;font-size:12px;font-weight:700;color:var(--accent);text-decoration:none}
+.acts{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:6px}
+.num{font-variant-numeric:tabular-nums;user-select:text;-webkit-user-select:text}
+.next{background:var(--school-ink);color:var(--surface);border-radius:18px;padding:16px;margin-top:14px}
+.next small{display:block;font-size:12px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;opacity:.85}
+.next h2{margin:4px 0 0;font-size:22px;font-weight:800}
+.next p{margin:2px 0 0;font-size:13px;opacity:.9}
+.next .btn{margin-top:12px;background:var(--surface);color:var(--school-ink)}
+.pill{padding:6px 12px;border-radius:999px;font-size:12px;font-weight:800;background:var(--school-bg);color:var(--school-ink);white-space:nowrap}
+.pill.t{background:var(--accent-soft);color:var(--accent)}
+.badge{padding:4px 10px;border-radius:999px;font-size:11px;font-weight:700;background:var(--slate-bg);color:var(--slate-ink);white-space:nowrap}
+.badge.warn{background:var(--personal-bg);color:var(--personal-ink)}
+.badge.exam{background:var(--school-bg);color:var(--school-ink)}
+.tt{display:flex;align-items:center;gap:12px;padding:10px 12px;border-bottom:1px solid var(--line)}
+.tt:last-child{border-bottom:0}
+.tt .d{width:44px;text-align:center;padding:3px 0;border-radius:8px;background:var(--school-bg);color:var(--school-ink);font-size:12px;font-weight:800;flex:none}
+.grp{background:var(--surface);border:1px solid var(--line);border-radius:16px}
+.rr{display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid var(--line)}
+.rr:last-child{border-bottom:0}
+.rr input[type=time]{width:112px;flex:none}
+.rr .rb{display:flex;flex-direction:column}
+.sw{width:44px;height:44px;display:flex;align-items:center;justify-content:center;flex:none}
+.sw input{width:22px;height:22px;margin:0;accent-color:var(--accent)}
+.pills{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.pills button{min-height:44px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;padding:0}
+.pills button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.note{font-size:13px;color:var(--muted);background:var(--slate-bg);border-radius:12px;padding:10px 12px;margin-top:12px}
+.note b{color:var(--ink)}
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:10;background:var(--surface);border-top:1px solid var(--line);padding-top:8px;padding-bottom:calc(8px + env(safe-area-inset-bottom,0px));padding-left:max(8px,env(safe-area-inset-left,0px));padding-right:max(8px,env(safe-area-inset-right,0px))}
+.nav>div{max-width:560px;margin:0 auto;display:flex;align-items:center;justify-content:space-around}
+.nb{display:flex;flex-direction:column;align-items:center;gap:4px;width:64px;min-height:52px;justify-content:center;background:transparent;border:0;font-size:11px;font-weight:600;color:var(--muted);cursor:pointer;padding:0}
+.nb[aria-current="page"]{color:var(--accent);font-weight:700}
+.add{width:52px;height:52px;border-radius:26px;border:0;background:var(--accent);color:var(--accent-ink);display:flex;align-items:center;justify-content:center;margin-top:-18px;box-shadow:0 6px 16px rgba(11,93,102,.35);cursor:pointer;padding:0}
+.back{position:fixed;inset:0;background:var(--scrim);z-index:20}
+.panel{position:fixed;left:0;right:0;bottom:0;z-index:21;max-width:560px;margin:0 auto;max-height:92vh;overflow:auto;background:var(--surface);border-radius:20px 20px 0 0;border:1px solid var(--line);padding-top:16px;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.panel h2{margin:0;font-size:22px;font-weight:800;letter-spacing:-.3px}
+.seg{display:flex;gap:4px;background:var(--slate-bg);border-radius:14px;padding:4px;margin-top:12px}
+.seg button{flex:1;min-height:44px;border:0;border-radius:11px;background:transparent;color:var(--slate-ink);font-size:13px;font-weight:700;cursor:pointer;padding:0}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--accent);font-weight:800;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.f{display:flex;flex-direction:column;gap:12px;margin-top:14px}
+.f2{display:flex;gap:10px}
+.f2>div{flex:1;min-width:0}
+.f label,.lb{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:4px}
+.in{width:100%;height:48px;border:1px solid var(--line);border-radius:12px;padding:0 12px;font:600 16px var(--font);color:var(--ink);background:var(--bg)}
+.in:focus-visible{outline-offset:0}
+.chkrow{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600;min-height:44px}
+.chkrow input{width:22px;height:22px;margin:0;accent-color:var(--accent)}
+.err{color:var(--danger);font-size:13px;font-weight:600;min-height:18px;margin-top:8px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(96px + env(safe-area-inset-bottom,0px));z-index:30;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:13px;font-weight:600;max-width:calc(100% - 32px)}
+.mv{display:flex;align-items:center;gap:8px;padding:8px 8px 8px 12px;border-bottom:1px solid var(--line)}
+.mv:last-child{border-bottom:0}
+@media (prefers-reduced-motion:no-preference){.panel{animation:up .18s ease-out}@keyframes up{from{transform:translateY(24px);opacity:.6}to{transform:none;opacity:1}}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div id="toast" class="toast" role="status" hidden></div>
+
+<script>
+(function(){
+'use strict';
+var pad=function(n){return String(n).padStart(2,'0')};
+var ymd=function(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())};
+var parse=function(s){var p=s.split('-').map(Number);return new Date(p[0],p[1]-1,p[2])};
+var addDays=function(s,n){var d=parse(s);d.setDate(d.getDate()+n);return ymd(d)};
+var mondayOf=function(s){var d=parse(s);d.setDate(d.getDate()-((d.getDay()+6)%7));return ymd(d)};
+var todayStr=function(){return ymd(new Date())};
+var daysUntil=function(s){return Math.round((parse(s)-parse(todayStr()))/864e5)};
+var DOW=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+var DOWL=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+var MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+var BY=['SU','MO','TU','WE','TH','FR','SA'];
+var uid=function(){return Math.random().toString(36).slice(2,9)};
+var esc=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})};
+var enc=encodeURIComponent;
+var safeUrl=function(u){u=String(u||'').trim();return /^https:\/\/[^\s]+$/i.test(u)?u:''};
+var fmtDate=function(s){var d=parse(s);return DOW[d.getDay()]+' '+d.getDate()+' '+MON[d.getMonth()]};
+
+function svg(d){return '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+d+'</svg>'}
+var IC={
+  cal:svg('<rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/>'),
+  clock:svg('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),
+  plus:svg('<path d="M12 5v14M5 12h14"/>'),
+  cap:svg('<path d="M2 9l10-5 10 5-10 5-10-5z"/><path d="M6 11v5c0 1.5 3 3 6 3s6-1.5 6-3v-5"/>'),
+  sl:svg('<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>'),
+  bell:svg('<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>'),
+  phone:svg('<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.1-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/>'),
+  video:svg('<rect x="2" y="6" width="13" height="12" rx="2"/><path d="M15 10l7-4v12l-7-4"/>'),
+  check:svg('<path d="M5 12l5 5L20 7"/>'),
+  l:svg('<path d="M15 6l-6 6 6 6"/>'),
+  r:svg('<path d="M9 6l6 6-6 6"/>'),
+  x:svg('<path d="M6 6l12 12M18 6L6 18"/>'),
+  copy:svg('<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/>')
+};
+var chkIc=function(){return '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>'};
+
+var DEFAULT_ROUTINE=[
+  {id:'wake',label:'Wake up',time:'05:00',on:true,note:'Start of the work day'},
+  {id:'ready',label:'Get ready for work',time:'06:00',on:true,note:'Start preparing'},
+  {id:'leave',label:'Leave for work',time:'07:30',on:true,note:'Time to leave'},
+  {id:'lunch',label:'Lunch break',time:'12:00',on:true,note:'Until 13:30'},
+  {id:'lunchend',label:'Lunch ends in 10 minutes',time:'13:20',on:true,note:'Back at 13:30'},
+  {id:'knock',label:'Knock off',time:'16:30',on:true,note:'Wrap up and head home'}
+];
+function defaults(){return {v:1,tasks:[],classes:[],routine:DEFAULT_ROUTINE.map(function(r){return Object.assign({},r)}),days:[1,2,3,4,5],planned:{},planTime:'20:00'}}
+function normalize(o){
+  var s=Object.assign(defaults(),o||{});
+  if(!Array.isArray(s.tasks))s.tasks=[];
+  if(!Array.isArray(s.classes))s.classes=[];
+  if(!Array.isArray(s.routine)||!s.routine.length)s.routine=defaults().routine;
+  if(!Array.isArray(s.days))s.days=[1,2,3,4,5];
+  if(!s.planned||typeof s.planned!=='object')s.planned={};
+  if(!s.planTime)s.planTime='20:00';
+  return s;
+}
+
+var S=defaults();
+var ui={view:'week',date:todayStr(),week:mondayOf(todayStr()),sheet:null};
+var pending=false,db=null,docRef=null,saveTimer=null,toastTimer=null;
+var LS='weekwise-state-v1';
+try{var raw=localStorage.getItem(LS);if(raw)S=normalize(JSON.parse(raw))}catch(e){}
+
+var NATIVE=!!(window.Android&&window.Android.syncSchedule);
+function persist(){
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(function(){
+    try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){toast('Could not save on this device.')}
+    syncNative();
+  },250);
+}
+
+/* ---------- native alarms: turn the plan into a list the Android side arms ---------- */
+function shiftTime(t,m){var p=t.split(':').map(Number);var x=Math.max(0,Math.min(1439,p[0]*60+p[1]+m));return pad(Math.floor(x/60))+':'+pad(x%60)}
+function buildEntries(){
+  var out=[],today=todayStr(),days=S.days.slice();
+  if(days.length){
+    S.routine.forEach(function(r){
+      if(!r.on)return;
+      var kind=(r.id==='wake'||r.id==='leave'||r.id==='knock')?'alarm':'reminder';
+      out.push({id:'r-'+r.id,title:r.label,text:r.note||'',kind:kind,time:r.time,days:days,date:null});
+    });
+    var lv=S.routine.filter(function(r){return r.id==='leave'&&r.on})[0];
+    if(lv)out.push({id:'r-leave-soon',title:'Leave in 15 minutes',text:'Get your things ready.',kind:'reminder',time:shiftTime(lv.time,-15),days:days,date:null});
+    var kn=S.routine.filter(function(r){return r.id==='knock'&&r.on})[0];
+    if(kn)out.push({id:'r-wrap',title:'Wrap up for the day',text:'Knock off in 15 minutes.',kind:'reminder',time:shiftTime(kn.time,-15),days:days,date:null});
+  }
+  S.classes.forEach(function(c){
+    out.push({id:'c-'+c.id+'-30',title:c.course+' starts in 30 minutes',text:'Get ready for class.',kind:'reminder',time:shiftTime(c.start,-30),days:[c.day],date:null});
+    out.push({id:'c-'+c.id+'-5',title:'Join '+c.course+' now',text:'Starts in 5 minutes. Open WeekWise and tap Join class.',kind:'reminder',time:shiftTime(c.start,-5),days:[c.day],date:null});
+  });
+  S.tasks.forEach(function(x){
+    if(x.done||x.date<today)return;
+    if(x.kind==='exam'){
+      [7,3,1].forEach(function(n){var d=addDays(x.date,-n);if(d>=today)out.push({id:'t-'+x.id+'-e'+n,title:x.title,text:'Exam in '+n+(n===1?' day':' days'),kind:'reminder',time:'08:00',days:[],date:d})});
+      out.push({id:'t-'+x.id+'-day',title:x.title,text:'Exam today'+(x.time?' at '+x.time:''),kind:'reminder',time:'07:00',days:[],date:x.date});
+      return;
+    }
+    if(x.kind==='due'){
+      var d1=addDays(x.date,-1);
+      if(d1>=today)out.push({id:'t-'+x.id+'-d1',title:x.title,text:'Due tomorrow',kind:'reminder',time:'08:00',days:[],date:d1});
+      out.push({id:'t-'+x.id+'-day',title:x.title,text:'Due today'+(x.time?' by '+x.time:''),kind:'reminder',time:'08:00',days:[],date:x.date});
+      return;
+    }
+    if(!x.time)return;
+    var isCall=x.cat==='call'||x.kind==='call';
+    if(isCall)out.push({id:'t-'+x.id,title:x.title,text:'Call '+(x.contact||'')+' in 10 minutes. Open WeekWise to dial.',kind:'reminder',time:shiftTime(x.time,-10),days:[],date:x.date});
+    else out.push({id:'t-'+x.id,title:x.title,text:'Planned for '+x.time,kind:'reminder',time:x.time,days:[],date:x.date});
+  });
+  out.push({id:'plan',title:'What do you want to achieve tomorrow?',text:'Tap to plan tomorrow.',kind:'reminder',time:S.planTime,days:[0,1,2,3,4,5,6],date:null});
+  return out;
+}
+function syncNative(){
+  if(!NATIVE)return;
+  try{Android.syncSchedule(JSON.stringify(buildEntries()))}catch(e){}
+}
+
+/* ---------- phone calendar events (read only) ---------- */
+var calEv=[];
+function loadCal(){
+  if(!NATIVE)return;
+  try{
+    var st=JSON.parse(Android.permissionStatus());
+    if(!st.calendar){calEv=[];return}
+    calEv=JSON.parse(Android.getCalendarEvents(String(parse(addDays(ui.week,-7)).getTime()),String(parse(addDays(ui.week,21)).getTime())));
+  }catch(e){calEv=[]}
+}
+function utcYmd(ms){var u=new Date(ms);return u.getUTCFullYear()+'-'+pad(u.getUTCMonth()+1)+'-'+pad(u.getUTCDate())}
+function eventsOn(date){
+  var a=parse(date).getTime(),b=parse(addDays(date,1)).getTime();
+  return calEv.filter(function(e){
+    if(e.allDay)return utcYmd(e.begin)<=date&&date<utcYmd(e.end);
+    return e.begin<b&&e.end>a;
+  });
+}
+function evTime(e){if(e.allDay)return '00:00';var d=new Date(e.begin);return pad(d.getHours())+':'+pad(d.getMinutes())}
+function toast(msg){
+  var t=document.getElementById('toast');t.textContent=msg;t.hidden=false;
+  clearTimeout(toastTimer);toastTimer=setTimeout(function(){t.hidden=true},2600);
+}
+
+/* ---------- calendar links ---------- */
+function addMin(t,m){var p=t.split(':').map(Number);var x=Math.min(1439,p[0]*60+p[1]+m);return pad(Math.floor(x/60))+':'+pad(x%60)}
+function gcal(o){
+  var dd=o.date.replace(/-/g,''),dates;
+  if(o.start){var e=o.end||addMin(o.start,30);dates=dd+'T'+o.start.replace(':','')+'00/'+dd+'T'+e.replace(':','')+'00'}
+  else{dates=dd+'/'+addDays(o.date,1).replace(/-/g,'')}
+  return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text='+enc(o.title)+'&dates='+dates+(o.details?'&details='+enc(o.details):'')+(o.recur?'&recur='+enc(o.recur):'')+'&ctz=Africa%2FBlantyre';
+}
+function nextOnDow(dow){var d=todayStr();for(var i=0;i<7;i++){if(parse(d).getDay()===dow)return d;d=addDays(d,1)}return todayStr()}
+function nextInDays(days){var d=todayStr();for(var i=0;i<7;i++){if(days.indexOf(parse(d).getDay())>-1)return d;d=addDays(d,1)}return todayStr()}
+function calLink(label,href){return NATIVE?'':'<a class="lnk" href="'+esc(href)+'" target="_blank" rel="noopener">'+label+'</a>'}
+function taskCal(x){
+  var details=(x.contact?'With '+x.contact+(x.phone?' ('+x.phone+')':'')+'. ':'')+'Planned in WeekWise.';
+  return gcal({title:x.title,date:x.date,start:x.time||'',end:x.time?addMin(x.time,x.kind==='call'?15:60):'',details:details});
+}
+function classCal(c){
+  return gcal({title:c.course+' (class)',date:nextOnDow(c.day),start:c.start,end:c.end,details:c.link?'Join: '+c.link:'',recur:'RRULE:FREQ=WEEKLY;BYDAY='+BY[c.day]});
+}
+function routineCal(r){
+  var days=S.days.slice().sort(function(a,b){return a-b});
+  if(!days.length)days=[1,2,3,4,5];
+  return gcal({title:r.label,date:nextInDays(days),start:r.time,end:addMin(r.time,15),recur:'RRULE:FREQ=WEEKLY;BYDAY='+days.map(function(d){return BY[d]}).join(',')});
+}
+function planCal(){return gcal({title:'Plan tomorrow in WeekWise',date:todayStr(),start:S.planTime,end:addMin(S.planTime,15),recur:'RRULE:FREQ=DAILY'})}
+
+/* ---------- data helpers ---------- */
+var CATCLS={work:'work',school:'school',call:'call',personal:'personal',errand:'personal',family:'family'};
+var CATNAME={personal:'Personal',work:'Work',family:'Family',errand:'Errands',school:'School',call:'Call'};
+function chip(cls,text,done){return '<span class="chip c-'+cls+(done?' done':'')+'"><i></i><span>'+esc(text)+'</span></span>'}
+function itemsFor(date){
+  var dow=parse(date).getDay(),out=[];
+  if(S.days.indexOf(dow)>-1)S.routine.forEach(function(r){if(r.on)out.push({t:'routine',time:r.time,r:r})});
+  S.classes.filter(function(c){return c.day===dow}).forEach(function(c){out.push({t:'class',time:c.start,c:c})});
+  S.tasks.filter(function(x){return x.date===date}).forEach(function(x){out.push({t:'task',time:x.time||'99:99',x:x})});
+  eventsOn(date).forEach(function(e){out.push({t:'event',time:evTime(e),e:e})});
+  out.sort(function(a,b){return a.time.localeCompare(b.time)});
+  return out;
+}
+function workSpan(){
+  var a=S.routine.filter(function(r){return r.id==='leave'})[0],b=S.routine.filter(function(r){return r.id==='knock'})[0];
+  return a&&b?a.time+'–'+b.time:'';
+}
+function progress(date){
+  var t=S.tasks.filter(function(x){return x.date===date});
+  if(!t.length)return {done:0,total:0};
+  return {done:t.filter(function(x){return x.done}).length,total:t.length};
+}
+function nextClass(){
+  var now=new Date(),best=null;
+  for(var i=0;i<8;i++){
+    var d=new Date(now);d.setDate(d.getDate()+i);
+    S.classes.filter(function(c){return c.day===d.getDay()}).forEach(function(c){
+      var p=c.start.split(':').map(Number);
+      var t=new Date(d.getFullYear(),d.getMonth(),d.getDate(),p[0],p[1]);
+      if(t>now&&(!best||t<best.t))best={c:c,t:t,date:ymd(t)};
+    });
+  }
+  return best;
+}
+function rel(date){var n=daysUntil(date);return n===0?'Today':n===1?'Tomorrow':n===-1?'Yesterday':fmtDate(date)}
+
+/* ---------- rendering ---------- */
+function header(eyebrow,title,sub,btns){
+  return '<div class="hd"><div><div class="eyebrow">'+esc(eyebrow)+'</div><h1>'+esc(title)+'</h1>'+(sub?'<div class="sub">'+esc(sub)+'</div>':'')+'</div>'+(btns?'<div class="hbtns">'+btns+'</div>':'')+'</div>';
+}
+function planBanner(){
+  var tmr=addDays(todayStr(),1),done=S.planned[tmr],now=new Date();
+  var p=S.planTime.split(':').map(Number),late=now.getHours()*60+now.getMinutes()>=p[0]*60+p[1];
+  var n=itemsFor(tmr).filter(function(i){return i.t!=='routine'}).length;
+  var t=done?'Tomorrow is planned':(late?'It is past '+S.planTime+' · plan tomorrow':'Tonight '+S.planTime+' · plan tomorrow');
+  var s=DOWL[parse(tmr).getDay()]+' has '+n+(n===1?' thing':' things')+' besides your routine';
+  return '<button class="banner'+(done?' ok':'')+'" data-act="plan-open">'+IC.bell+'<span><b>'+esc(t)+'</b><small>'+esc(s)+'</small></span></button>';
+}
+function dayChips(date){
+  var dow=parse(date).getDay(),chips=[];
+  if(S.days.indexOf(dow)>-1&&workSpan())chips.push(chip('work','Work '+workSpan().split('–')[0]));
+  S.classes.filter(function(c){return c.day===dow}).forEach(function(c){chips.push(chip('school',c.course+' '+c.start))});
+  S.tasks.filter(function(x){return x.date===date}).sort(function(a,b){return (a.time||'99').localeCompare(b.time||'99')}).forEach(function(x){chips.push(chip(CATCLS[x.cat]||'personal',x.title+(x.time?' '+x.time:''),x.done))});
+  eventsOn(date).forEach(function(e){chips.push(chip('slate',e.title+(e.allDay?'':' '+evTime(e))))});
+  var shown=chips.slice(0,4);
+  if(chips.length>4)shown.push(chip('slate','+'+(chips.length-4)+' more'));
+  return shown.length?shown.join(''):'<span class="empty">Nothing planned</span>';
+}
+function weekView(){
+  var days=[],i;for(i=0;i<7;i++)days.push(addDays(ui.week,i));
+  var a=parse(days[0]),b=parse(days[6]);
+  var range=a.getDate()+' '+MON[a.getMonth()]+' – '+b.getDate()+' '+MON[b.getMonth()];
+  var isThis=ui.week===mondayOf(todayStr());
+  var btns='<button class="ib" data-act="week-prev" aria-label="Previous week">'+IC.l+'</button><button class="ib" data-act="week-next" aria-label="Next week">'+IC.r+'</button>';
+  var h=header('WeekWise',isThis?'This week':'Week of '+a.getDate()+' '+MON[a.getMonth()],range,btns);
+  if(!isThis)h+='<div style="margin-top:10px"><button class="btn gh" data-act="week-now">Back to this week</button></div>';
+  h+=planBanner();
+  h+='<div class="sec">Week at a glance</div><div class="list">';
+  days.forEach(function(d){
+    var p=progress(d),dt=parse(d),today=d===todayStr();
+    h+='<button class="day'+(today?' today':'')+'" data-act="day" data-date="'+d+'"><span class="dbk"><small>'+DOW[dt.getDay()]+'</small><b>'+dt.getDate()+'</b></span><span class="chips">'+dayChips(d)+'</span><span class="prog">'+(p.total?p.done+'/'+p.total:'–')+'</span></button>';
+  });
+  h+='</div>';
+  if(!S.tasks.length&&!S.classes.length)h+='<div class="note"><b>Start here.</b> Tap the + button to add a task, a call or a class. Your weekday routine is already set up under Settings.</div>';
+  return h;
+}
+function taskRow(x){
+  var cls=CATCLS[x.cat]||'personal';
+  var isCall=x.cat==='call'||x.kind==='call';
+  var meta=[];
+  if(x.kind==='due')meta.push('Assignment due');
+  if(x.kind==='exam')meta.push('Exam');
+  if(x.top)meta.push('Top priority');
+  var phone=(x.phone||'').trim();
+  var extra='';
+  if(isCall){
+    extra+='<div class="rs">'+(x.contact?esc(x.contact)+' · ':'')+(phone?'<span class="num">'+esc(phone)+'</span>':'No number added yet')+'</div>';
+  }
+  var acts='';
+  if(isCall&&phone){
+    acts+='<a class="btn call" href="tel:'+esc(phone.replace(/[^\d+]/g,''))+'">'+IC.phone+'Call</a><button class="btn gh" data-act="copy" data-text="'+esc(phone)+'">'+IC.copy+'Copy number</button>';
+  }
+  acts+=calLink('Add to Google Calendar',taskCal(x));
+  return '<div class="tr"><div class="tm">'+(x.time?esc(x.time):'Any time')+'</div><div class="row bar-'+cls+(x.done?' done':'')+'" style="align-items:flex-start"><button class="chk" data-act="toggle" data-id="'+x.id+'" aria-pressed="'+(x.done?'true':'false')+'" aria-label="Mark '+esc(x.title)+' as done"><span>'+(x.done?chkIc():'')+'</span></button><div class="rb"><div class="rt">'+esc(x.title)+(x.example?'<span class="ex">Example</span>':'')+'</div><div class="rs">'+CATNAME[x.cat||'personal']+(meta.length?' · '+esc(meta.join(' · ')):'')+'</div>'+extra+'<div class="acts">'+acts+'</div></div><button class="btn gh" data-act="edit-task" data-id="'+x.id+'">Edit</button></div></div>';
+}
+function classRow(c){
+  var link=safeUrl(c.link);
+  var acts=(link?'<a class="btn sch" href="'+esc(link)+'" target="_blank" rel="noopener">'+IC.video+'Join class</a>':'<span class="empty">No class link yet</span>')+calLink('Add weekly to Google Calendar',classCal(c));
+  return '<div class="tr"><div class="tm">'+esc(c.start)+'</div><div class="row bar-school" style="align-items:flex-start"><div class="rb"><div class="rt">'+esc(c.course)+(c.example?'<span class="ex">Example</span>':'')+'</div><div class="rs">Class · '+esc(c.start)+' – '+esc(c.end)+'</div><div class="acts">'+acts+'</div></div><button class="btn gh" data-act="edit-class" data-id="'+c.id+'">Edit</button></div></div>';
+}
+function todayView(){
+  var d=ui.date,dt=parse(d),p=progress(d);
+  var btns='<button class="ib" data-act="day-prev" aria-label="Previous day">'+IC.l+'</button><button class="ib" data-act="day-next" aria-label="Next day">'+IC.r+'</button>';
+  var h=header(d===todayStr()?'Today':rel(d),DOWL[dt.getDay()],dt.getDate()+' '+MON[dt.getMonth()]+(p.total?' · '+p.done+' of '+p.total+' done':''),btns);
+  if(d!==todayStr())h+='<div style="margin-top:10px"><button class="btn gh" data-act="go-today">Go to today</button></div>';
+  h+=planBanner();
+  var top=S.tasks.filter(function(x){return x.date===d&&x.top}).slice(0,3);
+  if(top.length){
+    h+='<div class="card top3" style="margin-top:14px"><div class="lb" style="letter-spacing:.6px;text-transform:uppercase">Top 3 for this day</div>';
+    top.forEach(function(x){h+='<div class="t3"><button class="chk" data-act="toggle" data-id="'+x.id+'" aria-pressed="'+(x.done?'true':'false')+'" aria-label="Mark '+esc(x.title)+' as done"><span>'+(x.done?chkIc():'')+'</span></button><span style="'+(x.done?'text-decoration:line-through;color:var(--muted)':'')+'">'+esc(x.title)+'</span></div>'});
+    h+='</div>';
+  }
+  var items=itemsFor(d);
+  h+='<div class="sec">Timeline</div><div class="tl">';
+  if(!items.length)h+='<div class="note" style="margin-top:0">Nothing on this day yet. Tap + to add a task, call or class.</div>';
+  items.forEach(function(it){
+    if(it.t==='routine')h+='<div class="tr"><div class="tm" style="padding-top:11px">'+esc(it.r.time)+'</div><div class="row quiet">'+IC.bell.replace('width="22" height="22"','width="16" height="16"')+'<span>'+esc(it.r.label)+'</span></div></div>';
+    else if(it.t==='event')h+='<div class="tr"><div class="tm">'+(it.e.allDay?'All day':esc(it.time))+'</div><div class="row" style="border-left:4px solid var(--slate-dot)"><div class="rb"><div class="rt">'+esc(it.e.title)+'</div><div class="rs">Phone calendar</div></div></div></div>';
+    else if(it.t==='class')h+=classRow(it.c);
+    else h+=taskRow(it.x);
+  });
+  h+='</div>';
+  return h;
+}
+function schoolView(){
+  var nc=nextClass(),h=header('Online classes','School','Classes, assignments and exams','');
+  if(nc){
+    var link=safeUrl(nc.c.link);
+    h+='<div class="next"><small>Next class · '+esc(rel(nc.date))+' '+esc(nc.c.start)+'</small><h2>'+esc(nc.c.course)+'</h2><p>'+esc(nc.c.start)+' – '+esc(nc.c.end)+'</p>'+(link?'<a class="btn" href="'+esc(link)+'" target="_blank" rel="noopener">'+IC.video+'Join class</a>':'<button class="btn" data-act="edit-class" data-id="'+nc.c.id+'">Add Meet or Classroom link</button>')+'</div>';
+  }else{
+    h+='<div class="note">No classes yet. Add your weekly timetable with the button below and each class gets a Join button.</div>';
+  }
+  h+='<div class="sec">Weekly timetable</div><div class="grp">';
+  var cls=S.classes.slice().sort(function(a,b){return ((a.day+6)%7)-((b.day+6)%7)||a.start.localeCompare(b.start)});
+  if(!cls.length)h+='<div class="tt"><span class="empty">No classes added</span></div>';
+  cls.forEach(function(c){h+='<div class="tt"><span class="d">'+DOW[c.day]+'</span><span class="rb"><span class="rt">'+esc(c.course)+(c.example?'<span class="ex">Example</span>':'')+'</span><span class="rs" style="display:block">'+esc(c.start)+' – '+esc(c.end)+'</span></span><button class="btn gh" data-act="edit-class" data-id="'+c.id+'">Edit</button></div>'});
+  h+='</div><div style="margin-top:10px"><button class="btn out" data-act="add" data-kind="class">'+IC.plus.replace('width="22" height="22"','width="18" height="18"')+'Add class</button></div>';
+  var due=S.tasks.filter(function(x){return x.cat==='school'&&(x.kind==='due'||x.kind==='exam')&&!x.done&&daysUntil(x.date)>=0}).sort(function(a,b){return a.date.localeCompare(b.date)});
+  h+='<div class="sec">Due soon and exams</div><div class="grp">';
+  if(!due.length)h+='<div class="tt"><span class="empty">No deadlines added</span></div>';
+  due.forEach(function(x){
+    var n=daysUntil(x.date);
+    var b=x.kind==='exam'?'<span class="badge exam">'+(n===0?'Today':'In '+n+' days')+'</span>':'<span class="badge'+(n<=3?' warn':'')+'">'+(n===0?'Due today':n<=3?'Due soon':'In '+n+' days')+'</span>';
+    h+='<div class="tt"><span class="rb"><span class="rt">'+esc(x.title)+(x.example?'<span class="ex">Example</span>':'')+'</span><span class="rs" style="display:block">'+(x.kind==='exam'?'Exam · ':'')+esc(fmtDate(x.date))+(x.time?', '+esc(x.time):'')+'</span></span>'+b+'<button class="btn gh" data-act="edit-task" data-id="'+x.id+'">Edit</button></div>';
+  });
+  h+='</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn out" data-act="add" data-kind="due">Add due date or exam</button><button class="btn gh" data-act="study">Add study block</button></div>';
+  return h;
+}
+function permsHTML(){
+  var st={notifications:false,calendar:false};
+  try{st=JSON.parse(Android.permissionStatus())}catch(e){}
+  return '<div class="sec">Phone access</div><div class="grp">'+
+    '<div class="rr"><span class="rb"><span class="rt">Notifications and alarms</span><span class="rs">'+(st.notifications?'On. Alarms ring even when the app is closed.':'Off. Alarms and reminders cannot show without this.')+'</span></span>'+(st.notifications?'':'<button class="btn out" data-act="perm-notif">Turn on</button>')+'</div>'+
+    '<div class="rr"><span class="rb"><span class="rt">Phone calendar</span><span class="rs">'+(st.calendar?'Your calendar events show in the week.':'Show your calendar events in the week.')+'</span></span>'+(st.calendar?'':'<button class="btn out" data-act="perm-cal">Allow</button>')+'</div></div>'+
+    '<div class="note"><b>So alarms never get skipped.</b> In your phone settings, open Apps, then WeekWise, then Battery, and choose Unrestricted.</div>';
+}
+function settingsView(){
+  var h=header('Settings','Routine and reminders','Your weekday routine and the nightly planning time','');
+  h+=NATIVE?permsHTML():'<div class="note"><b>About alarms.</b> A web app cannot ring an alarm or send a notification while it is closed. Tap <b>Add to Google Calendar</b> on a row once and your phone will notify you every week from then on.</div>';
+  h+='<div class="sec">Routine repeats on</div><div class="pills">';
+  [1,2,3,4,5,6,0].forEach(function(d){h+='<button data-act="day-toggle" data-d="'+d+'" aria-pressed="'+(S.days.indexOf(d)>-1?'true':'false')+'">'+DOW[d]+'</button>'});
+  h+='</div><div class="sec">Work routine</div><div class="grp">';
+  S.routine.forEach(function(r){
+    h+='<div class="rr"><span class="rb"><span class="rt">'+esc(r.label)+'</span><span class="rs">'+esc(r.note||'')+'</span>'+calLink('Add to Google Calendar',routineCal(r))+'</span><input class="in" type="time" id="rt-'+r.id+'" value="'+esc(r.time)+'" data-chg="r-time" data-id="'+r.id+'" aria-label="Time for '+esc(r.label)+'"><label class="sw"><input type="checkbox" '+(r.on?'checked':'')+' data-chg="r-on" data-id="'+r.id+'" aria-label="Show '+esc(r.label)+'"></label></div>';
+  });
+  h+='</div><div class="sec">Nightly planning</div><div class="grp"><div class="rr"><span class="rb"><span class="rt">Plan tomorrow</span><span class="rs">Asks what you want to achieve the next day</span>'+calLink('Add daily reminder to Google Calendar',planCal())+'</span><input class="in" type="time" id="plan-time" value="'+esc(S.planTime)+'" data-chg="plan-time" aria-label="Planning reminder time"></div></div>';
+  var ex=S.tasks.some(function(x){return x.example})||S.classes.some(function(c){return c.example});
+  if(ex)h+='<div class="sec">Example items</div><div class="note" style="margin-top:0">Some tasks and classes are examples so you can see how the app looks.</div><div style="margin-top:10px"><button class="btn danger" data-act="clear-examples">Remove example items</button></div>';
+  return h;
+}
+function nav(){
+  function b(v,l,ic){return '<button class="nb" data-act="nav" data-v="'+v+'"'+(ui.view===v?' aria-current="page"':'')+'>'+ic+l+'</button>'}
+  return '<nav class="nav" aria-label="Main"><div>'+b('week','Week',IC.cal)+b('today','Today',IC.clock)+'<button class="add" data-act="add-main" aria-label="Add">'+IC.plus.replace('width="22" height="22"','width="24" height="24"')+'</button>'+b('school','School',IC.cap)+b('settings','Settings',IC.sl)+'</div></nav>';
+}
+
+/* ---------- sheets ---------- */
+function options(list,sel){return list.map(function(o){return '<option value="'+o[0]+'"'+(String(o[0])===String(sel)?' selected':'')+'>'+esc(o[1])+'</option>'}).join('')}
+function field(id,label,type,val,extra){return '<div><label for="f-'+id+'">'+label+'</label><input class="in" id="f-'+id+'" type="'+type+'" value="'+esc(val)+'"'+(extra||'')+'></div>'}
+function sheetHTML(){
+  var sh=ui.sheet;
+  if(sh.kind==='plan')return planSheet();
+  var d=sh.draft,k=sh.kind,edit=sh.mode==='edit';
+  var title=edit?'Edit':'Schedule';
+  var h='<div class="back" data-act="sheet-close"></div><div class="panel" role="dialog" aria-modal="true" aria-label="'+title+'"><div class="hd" style="align-items:center"><h2>'+title+'</h2><button class="ib" data-act="sheet-close" aria-label="Close">'+IC.x+'</button></div>';
+  if(!edit){
+    h+='<div class="seg">';
+    [['task','Task'],['call','Call'],['class','Class'],['due','Due / Exam']].forEach(function(t){h+='<button data-act="sheet-tab" data-k="'+t[0]+'" aria-pressed="'+(k===t[0]?'true':'false')+'">'+t[1]+'</button>'});
+    h+='</div>';
+  }
+  h+='<div class="f">';
+  if(k==='class'){
+    h+=field('course','Course','text',d.course,' placeholder="Course name"');
+    h+='<div><label for="f-day">Day</label><select class="in" id="f-day">'+options([[1,'Monday'],[2,'Tuesday'],[3,'Wednesday'],[4,'Thursday'],[5,'Friday'],[6,'Saturday'],[0,'Sunday']],d.day)+'</select></div>';
+    h+='<div class="f2">'+field('start','Starts','time',d.start)+field('end','Ends','time',d.end)+'</div>';
+    h+=field('link','Google Meet or Classroom link (optional)','url',d.link,' placeholder="https://meet.google.com/..."');
+  }else{
+    h+=field('title',k==='call'?'Title (optional)':k==='due'?'Title':'Title','text',d.title,k==='call'?' placeholder="Call about..."':' placeholder="What needs to be done?"');
+    if(k==='call'){
+      if(NATIVE)h+='<button type="button" class="btn out" data-act="pick-contact">Pick from contacts</button>';
+      h+='<div class="f2">'+field('contact','Contact name','text',d.contact,' placeholder="Mum"')+field('phone','Phone number','tel',d.phone,' placeholder="+265..."')+'</div>';
+    }
+    if(k==='due')h+='<div><label for="f-dtype">Type</label><select class="in" id="f-dtype">'+options([['due','Assignment due'],['exam','Exam']],d.dtype)+'</select></div>';
+    h+='<div class="f2">'+field('date','Date','date',d.date)+field('time','Time (optional)','time',d.time)+'</div>';
+    if(k==='task'){
+      h+='<div><label for="f-cat">Category</label><select class="in" id="f-cat">'+options([['personal','Personal'],['work','Work'],['family','Family'],['errand','Errands'],['school','School']],d.cat)+'</select></div>';
+      h+='<label class="chkrow"><input type="checkbox" id="f-top"'+(d.top?' checked':'')+'>Top priority for the day</label>';
+    }
+  }
+  h+='</div><div class="err" id="sheet-err" role="alert"></div>';
+  h+='<button class="btn pri full" data-act="sheet-save" style="margin-top:6px">'+(edit?'Save changes':k==='call'?'Schedule call':k==='class'?'Add class':'Save')+'</button>';
+  if(edit)h+='<button class="btn danger full" data-act="sheet-delete" style="margin-top:10px">'+(sh.confirmDel?'Tap again to delete':'Delete')+'</button>';
+  if(!edit&&k==='call')h+='<div class="note">'+(NATIVE?'You get a reminder 10 minutes before. Open the task and tap Call to dial.':'Contacts are not shared with web apps, so type the name and number. After saving, tap Call on the task to ring them.')+'</div>';
+  h+='</div>';
+  return h;
+}
+function planSheet(){
+  var tmr=addDays(todayStr(),1),sh=ui.sheet,vals=sh.vals||['','',''];
+  var items=itemsFor(tmr).filter(function(i){return i.t!=='routine'});
+  var chips=[];
+  if(S.days.indexOf(parse(tmr).getDay())>-1&&workSpan())chips.push(chip('work','Work '+workSpan()));
+  items.forEach(function(i){if(i.t==='class')chips.push(chip('school',i.c.course+' '+i.c.start));else chips.push(chip(CATCLS[i.x.cat]||'personal',i.x.title+(i.x.time?' '+i.x.time:''),i.x.done))});
+  var over=S.tasks.filter(function(x){return !x.done&&x.date<=todayStr()}).sort(function(a,b){return a.date.localeCompare(b.date)});
+  var existingTop=S.tasks.filter(function(x){return x.date===tmr&&x.top}).length;
+  var slots=Math.max(0,3-existingTop);
+  var h='<div class="back" data-act="sheet-close"></div><div class="panel" role="dialog" aria-modal="true" aria-label="Plan tomorrow"><div class="hd" style="align-items:center"><div><div class="eyebrow">What do you want to achieve tomorrow?</div><h2>Plan '+DOWL[parse(tmr).getDay()]+'</h2></div><button class="ib" data-act="sheet-close" aria-label="Close">'+IC.x+'</button></div>';
+  h+='<div class="sec">Already on '+esc(DOWL[parse(tmr).getDay()])+'</div><div class="chips">'+(chips.length?chips.join(''):'<span class="empty">Only your routine so far</span>')+'</div>';
+  if(over.length){
+    h+='<div class="sec">Carried over ('+over.length+')</div><div class="grp">';
+    over.forEach(function(x){h+='<div class="mv"><div class="rb"><div class="rt">'+esc(x.title)+'</div><div class="rs">'+esc(rel(x.date))+'</div></div><button class="btn out" data-act="plan-move" data-id="'+x.id+'">Move to tomorrow</button></div>'});
+    h+='</div>';
+  }
+  h+='<div class="sec">Your top '+(slots?slots:3)+' for tomorrow</div>';
+  if(slots){
+    h+='<div class="f" style="margin-top:0">';
+    for(var i=0;i<slots;i++)h+='<div><label for="plan-'+(i+1)+'" class="lb">Priority '+(existingTop+i+1)+'</label><input class="in" id="plan-'+(i+1)+'" type="text" value="'+esc(vals[i]||'')+'" placeholder="What will you finish?"></div>';
+    h+='</div>';
+  }else h+='<div class="note" style="margin-top:0">Tomorrow already has 3 top priorities.</div>';
+  h+='<button class="btn pri full" data-act="plan-save" style="margin-top:16px">Save plan</button>';
+  h+='<div class="sub" style="text-align:center;margin-top:10px">Add the daily reminder to Google Calendar in Settings to get a phone notification at '+esc(S.planTime)+'.</div></div>';
+  return h;
+}
+
+function render(){
+  loadCal();
+  var v=ui.view==='week'?weekView():ui.view==='today'?todayView():ui.view==='school'?schoolView():settingsView();
+  document.getElementById('root').innerHTML='<div class="wrap">'+v+'</div>'+nav()+(ui.sheet?sheetHTML():'');
+  document.body.style.overflow=ui.sheet?'hidden':'';
+}
+
+/* ---------- actions ---------- */
+function blankDraft(){return {title:'',date:ui.date,time:'',cat:'personal',top:false,contact:'',phone:'',course:'',day:String(parse(ui.date).getDay()),start:'18:30',end:'20:00',link:'',dtype:'due'}}
+function openAdd(kind,preset){ui.sheet={mode:'add',kind:kind,draft:Object.assign(blankDraft(),preset||{})};render()}
+function readForm(){
+  var o={};
+  ['title','date','time','cat','contact','phone','course','day','start','end','link','dtype'].forEach(function(k){var el=document.getElementById('f-'+k);if(el)o[k]=el.value});
+  var top=document.getElementById('f-top');if(top)o.top=top.checked;
+  return o;
+}
+function closeSheet(){ui.sheet=null;render();if(pending){pending=false}}
+function showErr(m){var e=document.getElementById('sheet-err');if(e)e.textContent=m}
+function upsert(list,item){
+  var i=list.findIndex(function(x){return x.id===item.id});
+  if(i>-1){item.done=list[i].done;list[i]=item}else list.push(item);
+}
+function saveSheet(){
+  var sh=ui.sheet;Object.assign(sh.draft,readForm());var d=sh.draft,k=sh.kind;
+  if(k==='class'){
+    if(!d.course.trim())return showErr('Add the course name.');
+    if(!d.start||!d.end)return showErr('Add the start and end time.');
+    if(d.end<=d.start)return showErr('The class must end after it starts.');
+    if(d.link.trim()&&!safeUrl(d.link))return showErr('The link must start with https://');
+    upsert(S.classes,{id:sh.id||uid(),course:d.course.trim(),day:+d.day,start:d.start,end:d.end,link:d.link.trim()});
+  }else{
+    var title=d.title.trim();
+    if(k==='call'&&!title&&d.contact.trim())title='Call '+d.contact.trim();
+    if(!title)return showErr(k==='call'?'Add a title or a contact name.':'Add a title.');
+    if(!d.date)return showErr('Pick a date.');
+    upsert(S.tasks,{id:sh.id||uid(),title:title,date:d.date,time:d.time||'',cat:k==='call'?'call':k==='due'?'school':d.cat,kind:k==='due'?d.dtype:k,top:k==='task'?!!d.top:false,contact:k==='call'?d.contact.trim():'',phone:k==='call'?d.phone.trim():'',done:false});
+  }
+  ui.sheet=null;persist();render();toast('Saved');
+}
+function openEdit(kind,id){
+  if(kind==='class'){
+    var c=S.classes.filter(function(x){return x.id===id})[0];if(!c)return;
+    ui.sheet={mode:'edit',kind:'class',id:id,draft:Object.assign(blankDraft(),{course:c.course,day:String(c.day),start:c.start,end:c.end,link:c.link||''})};
+  }else{
+    var x=S.tasks.filter(function(t){return t.id===id})[0];if(!x)return;
+    var k=(x.cat==='call'||x.kind==='call')?'call':(x.kind==='due'||x.kind==='exam')?'due':'task';
+    ui.sheet={mode:'edit',kind:k,id:id,draft:Object.assign(blankDraft(),{title:x.title,date:x.date,time:x.time||'',cat:x.cat||'personal',top:!!x.top,contact:x.contact||'',phone:x.phone||'',dtype:x.kind==='exam'?'exam':'due'})};
+  }
+  render();
+}
+function deleteItem(){
+  var sh=ui.sheet;Object.assign(sh.draft,readForm());
+  if(!sh.confirmDel){sh.confirmDel=true;render();return}
+  if(sh.kind==='class')S.classes=S.classes.filter(function(x){return x.id!==sh.id});
+  else S.tasks=S.tasks.filter(function(x){return x.id!==sh.id});
+  ui.sheet=null;persist();render();toast('Deleted');
+}
+function readPlan(){return [1,2,3].map(function(n){var el=document.getElementById('plan-'+n);return el?el.value:''})}
+function savePlan(){
+  var tmr=addDays(todayStr(),1),vals=readPlan();
+  vals.forEach(function(v){if(v.trim())S.tasks.push({id:uid(),title:v.trim(),date:tmr,time:'',cat:'personal',kind:'task',top:true,contact:'',phone:'',done:false})});
+  S.planned[tmr]=true;
+  ui.sheet=null;persist();render();toast('Tomorrow is planned');
+}
+function copyText(t){
+  if(NATIVE){try{Android.copyText(t);toast('Number copied');return}catch(e){}}
+  var fallback=function(){toast('Copy is not available here. Press and hold the number to select it.')};
+  try{navigator.clipboard.writeText(t).then(function(){toast('Number copied')}).catch(fallback)}catch(e){fallback()}
+}
+
+document.addEventListener('click',function(e){
+  var el=e.target.closest('[data-act]');if(!el)return;
+  var a=el.dataset.act,id=el.dataset.id;
+  if(a==='nav'){ui.view=el.dataset.v;if(ui.view==='today')ui.date=ui.date||todayStr();render();window.scrollTo(0,0)}
+  else if(a==='week-prev'){ui.week=addDays(ui.week,-7);render()}
+  else if(a==='week-next'){ui.week=addDays(ui.week,7);render()}
+  else if(a==='week-now'){ui.week=mondayOf(todayStr());render()}
+  else if(a==='day'){ui.date=el.dataset.date;ui.view='today';render();window.scrollTo(0,0)}
+  else if(a==='day-prev'){ui.date=addDays(ui.date,-1);render()}
+  else if(a==='day-next'){ui.date=addDays(ui.date,1);render()}
+  else if(a==='go-today'){ui.date=todayStr();render()}
+  else if(a==='toggle'){var t=S.tasks.filter(function(x){return x.id===id})[0];if(t){t.done=!t.done;persist();render()}}
+  else if(a==='edit-task')openEdit('task',id);
+  else if(a==='edit-class')openEdit('class',id);
+  else if(a==='add-main')openAdd(ui.view==='school'?'class':'task');
+  else if(a==='add')openAdd(el.dataset.kind);
+  else if(a==='study')openAdd('task',{title:'Study block',cat:'school'});
+  else if(a==='sheet-tab'){Object.assign(ui.sheet.draft,readForm());ui.sheet.kind=el.dataset.k;render()}
+  else if(a==='sheet-save')saveSheet();
+  else if(a==='sheet-delete')deleteItem();
+  else if(a==='sheet-close')closeSheet();
+  else if(a==='plan-open'){ui.sheet={kind:'plan',vals:['','','']};render()}
+  else if(a==='plan-move'){ui.sheet.vals=readPlan();var m=S.tasks.filter(function(x){return x.id===id})[0];if(m){m.date=addDays(todayStr(),1);persist();render()}}
+  else if(a==='plan-save')savePlan();
+  else if(a==='day-toggle'){var d=+el.dataset.d,i=S.days.indexOf(d);if(i>-1)S.days.splice(i,1);else S.days.push(d);persist();render()}
+  else if(a==='copy')copyText(el.dataset.text);
+  else if(a==='perm-notif'){try{Android.requestNotifications()}catch(e){}}
+  else if(a==='perm-cal'){try{Android.requestCalendar()}catch(e){}}
+  else if(a==='pick-contact'){try{Android.pickContact()}catch(e){}}
+  else if(a==='clear-examples'){S.tasks=S.tasks.filter(function(x){return !x.example});S.classes=S.classes.filter(function(x){return !x.example});persist();render();toast('Examples removed')}
+});
+document.addEventListener('change',function(e){
+  var el=e.target.closest('[data-chg]');if(!el)return;
+  var c=el.dataset.chg,id=el.dataset.id;
+  if(c==='r-time'||c==='r-on'){
+    var r=S.routine.filter(function(x){return x.id===id})[0];if(!r)return;
+    if(c==='r-time'&&el.value)r.time=el.value;
+    if(c==='r-on')r.on=el.checked;
+    persist();render();
+  }else if(c==='plan-time'&&el.value){S.planTime=el.value;persist();render()}
+});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&ui.sheet)closeSheet()});
+
+/* called by the Android side */
+window.onPermissionResult=function(){render();syncNative()};
+window.onContactPicked=function(name,number){
+  var n=document.getElementById('f-contact'),p=document.getElementById('f-phone');
+  if(n)n.value=name;
+  if(p)p.value=number;
+};
+window.__back=function(){
+  if(ui.sheet){closeSheet();return true}
+  if(ui.view!=='week'){ui.view='week';render();return true}
+  return false;
+};
+
+render();
+syncNative();
+})();
+</script>
+</body>
+</html>
