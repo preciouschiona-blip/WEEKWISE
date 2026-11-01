@@ -216,7 +216,7 @@ var DEFAULT_ROUTINE=[
   {id:'lunchend',label:'Lunch ends in 10 minutes',time:'13:20',on:true,note:'Back at 13:30'},
   {id:'knock',label:'Knock off',time:'16:30',on:true,note:'Wrap up and head home'}
 ];
-function defaults(){return {v:1,tasks:[],classes:[],routine:DEFAULT_ROUTINE.map(function(r){return Object.assign({},r)}),days:[1,2,3,4,5],planned:{},planTime:'20:00'}}
+function defaults(){return {v:1,setup:false,tasks:[],classes:[],routine:DEFAULT_ROUTINE.map(function(r){return Object.assign({},r)}),days:[1,2,3,4,5],planned:{},planTime:'20:00'}}
 function normalize(o){
   var s=Object.assign(defaults(),o||{});
   if(!Array.isArray(s.tasks))s.tasks=[];
@@ -232,7 +232,7 @@ var S=defaults();
 var ui={view:'week',date:todayStr(),week:mondayOf(todayStr()),sheet:null};
 var pending=false,db=null,docRef=null,saveTimer=null,toastTimer=null;
 var LS='weekwise-state-v1';
-try{var raw=localStorage.getItem(LS);if(raw)S=normalize(JSON.parse(raw))}catch(e){}
+try{var raw=localStorage.getItem(LS);if(raw){var saved=JSON.parse(raw);S=normalize(saved);if(typeof saved.setup!=='boolean')S.setup=true}}catch(e){}
 
 var NATIVE=!!(window.Android&&window.Android.syncSchedule);
 function persist(){
@@ -285,7 +285,7 @@ function buildEntries(){
 }
 function syncNative(){
   if(!NATIVE)return;
-  try{Android.syncSchedule(JSON.stringify(buildEntries()))}catch(e){}
+  try{Android.syncSchedule(JSON.stringify(S.setup?buildEntries():[]))}catch(e){}
 }
 
 /* ---------- phone calendar events (read only) ---------- */
@@ -515,8 +515,50 @@ function nav(){
 /* ---------- sheets ---------- */
 function options(list,sel){return list.map(function(o){return '<option value="'+o[0]+'"'+(String(o[0])===String(sel)?' selected':'')+'>'+esc(o[1])+'</option>'}).join('')}
 function field(id,label,type,val,extra){return '<div><label for="f-'+id+'">'+label+'</label><input class="in" id="f-'+id+'" type="'+type+'" value="'+esc(val)+'"'+(extra||'')+'></div>'}
+function routineTime(id,fallback){var r=S.routine.filter(function(x){return x.id===id})[0];return r?r.time:fallback}
+function welcomeVals(sh){
+  return sh.vals||{wake:routineTime('wake','05:00'),ready:routineTime('ready','06:00'),leave:routineTime('leave','07:30'),lunch:routineTime('lunch','12:00'),lunchend:'13:30',knock:routineTime('knock','16:30'),plan:S.planTime};
+}
+function readWelcome(){
+  var sh=ui.sheet,v=Object.assign({},welcomeVals(sh));
+  ['wake','ready','leave','lunch','lunchend','knock','plan'].forEach(function(k){var el=document.getElementById('f-w-'+k);if(el)v[k]=el.value});
+  sh.vals=v;return v;
+}
+function welcomeSheet(){
+  var sh=ui.sheet,v=welcomeVals(sh);
+  var h='<div class="back" data-act="welcome-skip"></div><div class="panel" role="dialog" aria-modal="true" aria-label="Set up your day"><div class="eyebrow">Welcome to WeekWise</div><h2>Set up your day</h2>';
+  h+='<div class="sub" style="margin-top:6px">Your alarms and reminders use these times. You can change them any time in Settings.</div>';
+  h+='<div class="sec">Days with this routine</div><div class="pills">';
+  [1,2,3,4,5,6,0].forEach(function(d){h+='<button type="button" data-act="w-day" data-d="'+d+'" aria-pressed="'+(sh.days.indexOf(d)>-1?'true':'false')+'">'+DOW[d]+'</button>'});
+  h+='</div><div class="f">';
+  h+='<div class="f2">'+field('w-wake','Wake up','time',v.wake)+field('w-ready','Start getting ready','time',v.ready)+'</div>';
+  h+='<div class="f2">'+field('w-leave','Leave for work or school','time',v.leave)+field('w-knock','Finish for the day','time',v.knock)+'</div>';
+  h+='<div class="f2">'+field('w-lunch','Lunch starts','time',v.lunch)+field('w-lunchend','Lunch ends','time',v.lunchend)+'</div>';
+  h+=field('w-plan','Ask me to plan tomorrow at','time',v.plan);
+  h+='</div><div class="err" id="sheet-err" role="alert"></div>';
+  h+='<button class="btn pri full" data-act="welcome-save" style="margin-top:6px">Save my routine</button>';
+  h+='<button class="btn gh full" data-act="welcome-skip" style="margin-top:10px">Skip for now</button></div>';
+  return h;
+}
+function saveWelcome(){
+  var sh=ui.sheet,v=readWelcome();
+  var keys=['wake','ready','leave','lunch','lunchend','knock','plan'];
+  for(var i=0;i<keys.length;i++){if(!v[keys[i]])return showErr('Fill in every time.')}
+  if(v.lunchend<=v.lunch)return showErr('Lunch must end after it starts.');
+  var set=function(id,t,note){var r=S.routine.filter(function(x){return x.id===id})[0];if(r){r.time=t;if(note!==undefined)r.note=note}};
+  set('wake',v.wake);set('ready',v.ready);set('leave',v.leave);set('knock',v.knock);
+  set('lunch',v.lunch,'Until '+v.lunchend);
+  set('lunchend',shiftTime(v.lunchend,-10),'Back at '+v.lunchend);
+  S.planTime=v.plan;S.days=sh.days.slice();S.setup=true;
+  ui.sheet=null;persist();render();toast('Routine saved');
+}
+function skipWelcome(){
+  S.days=[];S.setup=true;ui.sheet=null;persist();render();
+  toast('No routine alarms yet. Add yours in Settings.');
+}
 function sheetHTML(){
   var sh=ui.sheet;
+  if(sh.kind==='welcome')return welcomeSheet();
   if(sh.kind==='plan')return planSheet();
   var d=sh.draft,k=sh.kind,edit=sh.mode==='edit';
   var title=edit?'Edit':'Schedule';
@@ -595,7 +637,10 @@ function readForm(){
   var top=document.getElementById('f-top');if(top)o.top=top.checked;
   return o;
 }
-function closeSheet(){ui.sheet=null;render();if(pending){pending=false}}
+function closeSheet(){
+  if(ui.sheet&&ui.sheet.kind==='welcome'){skipWelcome();return}
+  ui.sheet=null;render();if(pending){pending=false}
+}
 function showErr(m){var e=document.getElementById('sheet-err');if(e)e.textContent=m}
 function upsert(list,item){
   var i=list.findIndex(function(x){return x.id===item.id});
@@ -673,6 +718,9 @@ document.addEventListener('click',function(e){
   else if(a==='plan-open'){ui.sheet={kind:'plan',vals:['','','']};render()}
   else if(a==='plan-move'){ui.sheet.vals=readPlan();var m=S.tasks.filter(function(x){return x.id===id})[0];if(m){m.date=addDays(todayStr(),1);persist();render()}}
   else if(a==='plan-save')savePlan();
+  else if(a==='welcome-save')saveWelcome();
+  else if(a==='welcome-skip')skipWelcome();
+  else if(a==='w-day'){readWelcome();var wd=+el.dataset.d,wi=ui.sheet.days.indexOf(wd);if(wi>-1)ui.sheet.days.splice(wi,1);else ui.sheet.days.push(wd);render()}
   else if(a==='day-toggle'){var d=+el.dataset.d,i=S.days.indexOf(d);if(i>-1)S.days.splice(i,1);else S.days.push(d);persist();render()}
   else if(a==='copy')copyText(el.dataset.text);
   else if(a==='perm-notif'){try{Android.requestNotifications()}catch(e){}}
@@ -705,6 +753,7 @@ window.__back=function(){
   return false;
 };
 
+if(!S.setup)ui.sheet={kind:'welcome',days:S.days.slice(),vals:null};
 render();
 syncNative();
 })();
