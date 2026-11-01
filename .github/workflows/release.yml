@@ -37,7 +37,16 @@ jobs:
             echo "The KEYSTORE_BASE64 secret is missing. Add it under Settings > Secrets and variables > Actions."
             exit 1
           fi
-          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/weekwise-release.jks"
+          echo "$KEYSTORE_BASE64" | tr -d '[:space:]' | base64 -d > "$RUNNER_TEMP/weekwise-release.jks"
+
+      - name: Check the signing key
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        run: |
+          echo "keystore bytes: $(stat -c %s "$RUNNER_TEMP/weekwise-release.jks") (expected 2604)"
+          echo "alias length: ${#KEY_ALIAS} (expected 8), password length: ${#KEYSTORE_PASSWORD} (expected 24)"
+          keytool -list -keystore "$RUNNER_TEMP/weekwise-release.jks" -storepass "$(printf '%s' "$KEYSTORE_PASSWORD" | tr -d '[:space:]')" || true
 
       - name: Build signed release APK
         env:
